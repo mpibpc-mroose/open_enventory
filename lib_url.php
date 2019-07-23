@@ -60,9 +60,11 @@ function getSelfRef($suppress=array(),$call_transparent_params=array()) {
 		//~ $page_transparent_params=array();
 	//~ }
 	$retval="";
-	if (!in_array("~script~",$suppress)) {
-		$retval.=ltrim($_SERVER["SCRIPT_NAME"], '/')."?";
-	}
+    if (getenv("DOCKERIZE")) {
+        $retval.=ltrim($_SERVER["SCRIPT_NAME"], '/')."?";
+    } else {
+        $retval.=$_SERVER["SCRIPT_NAME"]."?";
+    }
 	//~ if (!empty($_SESSION["sess_proof"]) && $_REQUEST["sess_proof"]!=$_SESSION["sess_proof"]) { // auto fix sess proof
 		//~ $_REQUEST["sess_proof"]=$_SESSION["sess_proof"];
 	//~ }
