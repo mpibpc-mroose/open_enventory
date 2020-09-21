@@ -97,9 +97,18 @@ function performEdit($table,$db_id,$dbObj,$paramHash=array()) {
 		require_once "lib_analytics.php";
 		// maybe slow and error-prone
 		
-		 if (!empty($_REQUEST["analytics_device_id"])) { // get all information on device AND type
+		if (!empty($_REQUEST["analytics_device_id"])) { // get all information on device AND type
 			$device=getAnalyticsDevice($_REQUEST["analytics_device_id"]);
 		}
+		elseif (!empty($_REQUEST["analytics_type_id"])) {
+			list($device)=mysql_select_array(array(
+				"table" => "analytics_type", 
+				"dbs" => -1, 
+				"filter" => "analytics_type_id=".fixNull($_REQUEST["analytics_type_id"]), 
+				"limit" => 1, 
+			));
+		}
+		//var_dump($device);die("X");
 		
 		 if (!empty($_REQUEST["analytics_method_id"])) { // get all information on method, maybe there is none (is ok)
 			list($method)=mysql_select_array(array(
@@ -625,7 +634,7 @@ function performEdit($table,$db_id,$dbObj,$paramHash=array()) {
 		
 		$list_int_name="order_alternative";
 		$customer_selected_alternative_id="";
-		if (count($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) { // add alternatives
+		if (is_array($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) { // add alternatives
 			$pk2=getValueUID($list_int_name,$UID,"order_alternative_id");
 			switch(getDesiredAction($list_int_name,$UID)) {
 			case "del":
@@ -901,7 +910,7 @@ function performEdit($table,$db_id,$dbObj,$paramHash=array()) {
 			
 			// assign chemical_storage_type
 			$sql_query[]="DELETE FROM chemical_storage_chemical_storage_type WHERE chemical_storage_id=".$pk.";";
-			if (count($_REQUEST["chemical_storage_type"])) {
+			if ($_REQUEST["chemical_storage_type"]) {
 				foreach ($_REQUEST["chemical_storage_type"] as $chemical_storage_type_id) {
 					if (is_numeric($chemical_storage_type_id)) {
 						$sql_query[]="INSERT INTO chemical_storage_chemical_storage_type (chemical_storage_type_id,chemical_storage_id) ".
@@ -991,6 +1000,66 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 			getPkCondition($table,$pk);
 		
 		$result=performQueries($sql_query,$dbObj); // singleUpdate
+	break;
+	
+	case "data_publication":
+		if (empty($_REQUEST["publication_name"])) {
+			return array(FAILURE,s("error_no_publication_name"));
+		}
+		if (empty($_REQUEST["literature_id"]) && (!empty($_REQUEST["authors"]) || !empty($_REQUEST["literature_year"]) || !empty($_REQUEST["literature_title"]))) { // add or edit molecule if necessary
+			performEdit("literature",$db_id,$dbObj);
+		}
+		if (empty($pk)) {
+			$createArr=SQLgetCreateRecord($table,$now,true);
+			$createArr["data_publication_uid"]="UUID()";
+			$createArr["publication_status"]=1;
+			$pk=getInsertPk($table,$createArr,$db); // cmdINSERT
+			$_REQUEST["data_publication_id"]=$pk;
+		}
+		
+		// Zuordnungen aktualisieren
+		$ref_table_names=array("reaction","analytical_data");
+		foreach ($ref_table_names as $ref_table_name) {
+			$list_int_name="publication_".$ref_table_name;
+			if (is_array($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
+				// remove duplicate lines automatically
+				$desired_action=getDesiredAction($list_int_name,$UID);
+				switch($desired_action) {
+				case "del":
+					$sql_query[]="DELETE FROM ".$list_int_name." WHERE ".nvpUID($list_int_name,$UID,$list_int_name."_id",SQL_NUM,true).";";
+				break;
+				case "add":
+				case "update":
+					$pk2=getValueUID($list_int_name,$UID,$list_int_name."_id");
+
+					if (empty($pk2)) {
+						$createArr=SQLgetCreateRecord($list_int_name,$now,true);
+						$createArr[$list_int_name."_uid"]="UUID()";
+						$createArr["data_publication_id"]=$pk;
+						$pk2=getInsertPk($list_int_name,$createArr,$dbObj); // cmdINSERTsub
+					}
+
+					$sql_query[]="UPDATE ".$list_int_name." SET ".
+						nvpUID($list_int_name,$UID,$ref_table_name."_id",SQL_NUM).
+						nvpUID($list_int_name,$UID,$list_int_name."_text",SQL_TEXT).
+						SQLgetChangeRecord($list_int_name,$now).
+						getPkCondition($list_int_name,$pk2);
+				break;
+				}
+			}
+		}
+		
+		$sql_query[]="UPDATE data_publication SET ".
+			nvp("publication_name",SQL_TEXT).
+			nvp("publication_license",SQL_TEXT).
+			nvp("publication_doi",SQL_TEXT).
+			nvp("publication_text",SQL_TEXT).
+			nvp("publication_db_id",SQL_NUM).
+			nvp("literature_id",SQL_NUM).
+			SQLgetChangeRecord($table,$now).
+			getPkCondition($table,$pk);
+		
+		$result=performQueries($sql_query,$db); // singleUpdate
 	break;
 	
 	case "institution":
@@ -1102,6 +1171,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 		
 		if (empty($pk)) {
 			$createArr=SQLgetCreateRecord($table,$now,true);
+			$createArr["literature_uid"]="UUID()";
 			$pk=getInsertPk($table,$createArr,$dbObj); // cmdINSERT
 			$_REQUEST["literature_id"]=$pk;
 		}
@@ -1190,7 +1260,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 		
 		// alle autoren löschen
 		$sql_query[]="DELETE FROM author WHERE literature_id=".$pk;
-		if (count($author_data)) foreach ($author_data as $idx => $author) {
+		if (is_array($author_data)) foreach ($author_data as $idx => $author) {
 			$sql_query[]="INSERT INTO author SET literature_id=".fixNull($pk).
 				",nr_in_literature=".fixNull($idx).
 				",author_last=".fixStrSQL($author[0]).
@@ -1417,7 +1487,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 
 		// assign molecule_type
 		$sql_query[]="DELETE FROM molecule_molecule_type WHERE molecule_id=".$pk.";";
-		if (count($_REQUEST["molecule_type"])) {
+		if ($_REQUEST["molecule_type"]) {
 			foreach ($_REQUEST["molecule_type"] as $molecule_type_id) {
 				if (is_numeric($molecule_type_id)) {
 					$sql_query[]="INSERT INTO molecule_molecule_type (molecule_type_id,molecule_id) ".
@@ -1431,7 +1501,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 		$unique_fields=array("source","class","value","unit");
 		$duplicate_check=array();
 		$duplicate_actions=array("add" => "","update" => "del",);
-		if (count($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
+		if (is_array($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
 			// remove duplicate lines automatically
 			$desired_action=getDesiredAction($list_int_name,$UID);
 			switch($desired_action) {
@@ -1486,7 +1556,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 		
 		// Betriebsanweisungen
 		$list_int_name="molecule_instructions";
-		if (count($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
+		if (is_array($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
 			// remove duplicate lines automatically
 			$desired_action=getDesiredAction($list_int_name,$UID);
 			switch($desired_action) {
@@ -1532,7 +1602,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 		
 		if ($permissions & _order_accept) { // MPI
 			$list_int_name="mat_stamm_nr";
-			if (count($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
+			if (is_array($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
 				$pk2=getValueUID($list_int_name,$UID,"mat_stamm_nr_id");
 				switch(getDesiredAction($list_int_name,$UID)) {
 				case "del":
@@ -1609,7 +1679,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 			getPkCondition($table,$pk);
 		
 		$list_int_name="mpi_order_item";
-		if (count($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
+		if (is_array($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
 		
 			$pk2=getValueUID($list_int_name,$UID,"mpi_order_item_id");
 			
@@ -1660,7 +1730,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 		// Liste
 		$list_int_name="accepted_order";
 		$grand_total=0;
-		if (count($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) { // Gesamtsumme berechnen, um Fixkosten aufzuteilen
+		if (is_array($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) { // Gesamtsumme berechnen, um Fixkosten aufzuteilen
 			if ($_REQUEST["currency"]!=getValueUID($list_int_name,$UID,"price_currency")) {
 				continue;
 			}
@@ -1668,7 +1738,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 		}
 		
 		//~ $sql_query[]="UPDATE ".$list_int_name." SET order_comp_id=NULL WHERE order_comp_id=".fixNull($pk).";"; // take old ones out
-		if (count($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
+		if (is_array($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
 			$pk2=getValueUID($list_int_name,$UID,"accepted_order_id");
 			
 			if ($_REQUEST["currency"]!=getValueUID($list_int_name,$UID,"price_currency")) {
@@ -1811,7 +1881,8 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 			
 			// delete remainders of an old user with this name
 			//~ $user=fixStrSQL($_REQUEST["username"])."@".fixStrSQL($_REQUEST["remote_host"]);  // CHKN - should this not be 'php_server' to be consistent?
-			mysqli_query($db,"DROP USER IF EXISTS ".$current_user.";"); // result unimportant
+			mysqli_query($db,"GRANT USAGE ON *.* TO ".$current_user.";");  # CHKN added back compatibility for MySQL < 5.7 that has no DROP USER IF EXISTS
+			mysqli_query($db,"DROP USER ".$current_user.";"); // result unimportant
 			// FIXME
 			
 			$sql_query=array(
@@ -1942,6 +2013,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 		}
 		if (empty($pk)) {
 			$createArr=SQLgetCreateRecord($table,$now,true);
+			$createArr["project_uid"]="UUID()";
 			$pk=getInsertPk($table,$createArr,$db); // cmdINSERT
 		}
 		
@@ -1951,7 +2023,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 			"DELETE FROM project_literature WHERE project_id=".$pk.";",
 		);
 		// Personen neu setzen
-		if (count($_REQUEST["person"])) foreach ($_REQUEST["person"] as $this_person_id) {
+		if (is_array($_REQUEST["person"])) foreach ($_REQUEST["person"] as $this_person_id) {
 			if (is_numeric($this_person_id)) {
 				$sql_query[]="INSERT INTO project_person SET project_id=".$pk.",person_id=".fixNull($this_person_id).";"; // cmdINSERTsub
 			}
@@ -1959,7 +2031,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 		
 		// Literatur neu setzen
 		$list_int_name="project_literature";
-		if (count($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
+		if (is_array($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
 			switch(getDesiredAction($list_int_name,$UID)) {
 			case "del":
 				// do nothing
@@ -2073,7 +2145,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 				$list_int_name="products";
 			break;
 			}
-			if (count($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
+			if (is_array($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
 				if (getDesiredAction($list_int_name,$UID)=="del") {
 					continue;
 				}
@@ -2162,7 +2234,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 			break;
 			}
 			
-			if (count($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
+			if (is_array($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
 				$pk2=getValueUID($list_int_name,$UID,"reaction_chemical_id");
 				
 				// handle molfile, always needed for retention times
@@ -2178,6 +2250,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 					
 					if (empty($pk2)) {
 						$createArr=array();
+						$createArr["reaction_chemical_uid"]="UUID()";
 						addNvp($createArr,"reaction_id",SQL_NUM);
 						$pk2=getInsertPk("reaction_chemical",$createArr,$dbObj); // cmdINSERTsub
 					}
@@ -2246,7 +2319,7 @@ WHERE chemical_storage_id=".fixNull($pk).";";
 		//~ print_r($molecule_smiles_stereo);
 		//~ print_r($molecule_smiles);die();
 		// reaction_property (woher kriegen wir die eigenschaften, die im system gespeichert werden
-		if (count($_REQUEST["additionalFields"])) foreach ($_REQUEST["additionalFields"] as $int_name) {
+		if (is_array($_REQUEST["additionalFields"])) foreach ($_REQUEST["additionalFields"] as $int_name) {
 			if (empty($int_name)) {
 				continue;
 			}
@@ -2260,7 +2333,7 @@ VALUES (".fixNull($pk).",".fixStrSQL($int_name).",".fixStrSQL(makeHTMLSafe($_REQ
 		$gc_peak_UID_list=arr_merge(array(""),$_REQUEST["products"]);
 		$gc_peak_UID_list=arr_merge($gc_peak_UID_list,$_REQUEST["reactants"]);
 		
-		if (count($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) { // analytik durchgehen
+		if (is_array($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) { // analytik durchgehen
 			// handle default_for_type and so on
 			$analytical_data_display_settings=0+(getValueUID($list_int_name,$UID,"default_for_type")?1:0);
 			
@@ -2284,7 +2357,7 @@ VALUES (".fixNull($pk).",".fixStrSQL($int_name).",".fixStrSQL(makeHTMLSafe($_REQ
 				" WHERE ".nvpUID($list_int_name,$UID,"analytical_data_id",SQL_NUM,true).";";
 			
 			// add GC area information
-			if (count($gc_peak_UID_list)) foreach ($gc_peak_UID_list as $rc_UID) {
+			if (is_array($gc_peak_UID_list)) foreach ($gc_peak_UID_list as $rc_UID) {
 				$rc_rc_UID=$rc_UID;
 				if ($rc_UID=="") { // erster Eintrag
 					$rc_rc_UID=$_REQUEST["gc_peak_std_uid_".$UID."_"];
@@ -2342,7 +2415,7 @@ VALUES (".fixNull($pk).",".fixStrSQL($int_name).",".fixStrSQL(makeHTMLSafe($_REQ
 		
 		// Literatur
 		$list_int_name="reaction_literature";
-		if (count($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
+		if (is_array($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
 			switch(getDesiredAction($list_int_name,$UID)) {
 			case "del":
 				// do nothing
@@ -2366,7 +2439,7 @@ VALUES (".fixNull($pk).",".fixStrSQL($int_name).",".fixStrSQL(makeHTMLSafe($_REQ
 		
 		// Backup erstellen
 		$list_int_name="analytical_data";
-		if (count($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
+		if (is_array($_REQUEST[$list_int_name])) foreach ($_REQUEST[$list_int_name] as $UID) {
 			if (getDesiredAction($list_int_name,$UID)=="add") {
 				backupAnalyticalData(getValueUID($list_int_name,$UID,"analytical_data_id"));
 			}

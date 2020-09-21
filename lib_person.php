@@ -37,7 +37,7 @@ function getSelfViewName($username) {
 function getSelfViewUpdateFields() {
 	global $tables;
 	$retval=array();
-	if (count($tables["person"]["fields"])) foreach ($tables["person"]["fields"] as $field_name => $data) {
+	if (is_array($tables["person"]["fields"])) foreach ($tables["person"]["fields"] as $field_name => $data) {
 		if ($data["allowSelfChange"]) {
 			$retval[]=$field_name;
 		}
@@ -217,7 +217,7 @@ function fixPerson() {
 }
 
 function getRemoteHost($permissions) {
-	if ($permissions & _remote_read+_remote_read_all+_remote_write) {
+	if ($permissions & _remote_read) {
 		return "%";
 	}
 	else {

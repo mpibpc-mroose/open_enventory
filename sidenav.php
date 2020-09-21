@@ -73,7 +73,7 @@ style."
 "._style."
 </head>
 <body style=\"background-image:url(".$background_down.");background-repeat:repeat-y\"><div id=\"bg_down\"></div><div id=\"uni_logo\">".getImageLink($g_settings["links_in_topnav"]["uni_logo"])."</div>";
-showCommFrame(array());
+showCommFrame(array("url" => (($permissions & _lj_admin)?"upload_sciflection.php":""))); // try to upload any confirmed publications
 copyPasteAppletHelper();
 echo "<div id=\"sideDiv\">";
 
@@ -375,6 +375,7 @@ dependent={\"dbs\":[\"val32\"],\"val32\":[\"val0\"],\"val0\":[\"val1\"],\"val1\"
 	
 	showProjectLinks($linkParams);
 	showSideLink(array("url" => "list.php?table=lab_journal&dbs=-1&".$linkParams, "text" => s("edit_lab_journals"), "target" => "mainpage", ));
+	showSideLink(array("url" => "list.php?table=data_publication&dbs=-1&".$linkParams, "text" => s("edit_data_publications"), "target" => "mainpage", ));
 	//~ showSideLink(array("url" => "list.php?table=reaction_type&dbs=-1&".$linkParams, "text" => s("edit_reaction_types"), "target" => "mainpage"));
 	//~ showSideLink(array("url" => "list.php?table=literature&dbs=-1&".$linkParams, "text" => s("edit_literature"), "target" => "mainpage"));
 	showSideLink(array("url" => "lj_main.php?desired_action=search&table=literature&".$linkParams, "text" => s("edit_literature"), "target" => "_top"));
@@ -907,7 +908,7 @@ dependent={\"dbs\":[\"val0\",\"val9\"]};
 					<option value=\"all\">".s("all_suppliers")."
 					<option value=\"\">".s("db_only");
 		
-		if (count($steps)) foreach ($steps as $code) {
+		if (is_array($steps)) foreach ($steps as $code) {
 			if (!$suppliers[$code]["noExtSearch"]) {
 				echo "<option value=".fixStr($code).">".$suppliers[$code]["name"];
 			}
@@ -946,7 +947,7 @@ var source,table,currentType,prevType,oldMolfile,loadCount=0,sF=document.searchF
 buttons=new Array("chemical","molecule","supplier","search","reset_button","all");
 
 END;
-		if (count($suppliers)) foreach ($suppliers as $code => $supplier) {
+		if (is_array($suppliers)) foreach ($suppliers as $code => $supplier) {
 			$startPages[$code]=$suppliers[$code]["urls"]["startPage"];
 		}
 		echo 
@@ -1057,6 +1058,7 @@ case "settings_lj":
 	
 	showSideLink(array("url" => "credits.php?".$linkParams, "text" => s("credits"), "target" => "mainpage", ));
 	showSideLink(array("url" => "list.php?table=person&dbs=-1&".$linkParams, "text" => s("edit_users"), "target" => "mainpage", ));
+	showSideLink(array("url" => "list.php?table=other_db&dbs=-1&".$linkParams, "text" => "<i>Sciflection</i>", "target" => "mainpage", )); // needed for sciflection & similar
 	//~ showSideLink(array("url" => "list.php?table=lab_journal&dbs=-1&".$linkParams, "text" => s("edit_lab_journals"), "target" => "mainpage", ));
 	showSideLink(array("url" => "list.php?table=reaction_type&dbs=-1&".$linkParams, "text" => s("edit_reaction_types"), "target" => "mainpage"));
 	showSideLink(array("url" => "list.php?table=analytics_type&dbs=-1&".$linkParams, "text" => s("edit_analytics_types"), "target" => "mainpage", ));
@@ -1078,9 +1080,12 @@ case "settings_lj":
 	}
 
 break;
+case "unsubmittedDataPublications":
+	echo "<b>".s("checkAndSubmitDataPublication")."</b>";
+break;
 }
 
-if (!$g_settings["no_advert"] && !endswith($_SERVER["HTTP_HOST"],".uni-kl.de")) {
+if (!$g_settings["no_advert"] && !endswith(getenv("HTTP_HOST"),".uni-kl.de")) {
 	echo "<div id=\"support_project\"><a href=\"http://sciformation.com/sciformation_eln.html\" target=\"_blank\"><img src=\"lib/sciformation_eln.png\" border=\"0\"/></a>
 <a class=\"text\" href=\"http://sourceforge.net/project/project_donations.php?group_id=269061\" target=\"_blank\">or support this project with a donation?</a></div>";
 }

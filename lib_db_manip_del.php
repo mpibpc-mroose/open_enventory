@@ -162,6 +162,15 @@ WHERE (lab_journal.lab_journal_status IS NULL OR lab_journal.lab_journal_status=
 			);
 			$result=performQueries($sql_query,$dbObj);
 		break;
+		case "data_publication":
+			$sql_query=array();
+			array_push($sql_query,
+				"DELETE FROM publication_reaction WHERE data_publication_id=".$pk.";",
+				"DELETE FROM publication_analytical_data WHERE data_publication_id=".$pk.";",
+				"DELETE FROM data_publication WHERE data_publication_id=".$pk." LIMIT 1;"
+			);
+			$result=performQueries($sql_query,$db);
+		break;
 		case "institution":
 			$sql_query=array(
 				"UPDATE storage SET institution_id=NULL WHERE institution_id=".$pk.";",
@@ -253,7 +262,8 @@ WHERE (lab_journal.lab_journal_status IS NULL OR lab_journal.lab_journal_status=
 				if ($username!=$db_user) { // unfortunately we cannot remove own privileges and then drop user
 					$sql_query[]="REVOKE ALL PRIVILEGES, GRANT OPTION FROM ".$current_user.";";
 				}
-				$sql_query[]="DROP USER IF EXISTS ".$current_user.";";
+				$sql_query[]="GRANT USAGE ON *.* TO ".$current_user.";";  # CHKN added back compatibility for MySQL < 5.7 that has no DROP USER IF EXISTS
+				$sql_query[]="DROP USER ".$current_user.";";
 				$result=performQueries($sql_query,$db);
 			}
 		break;

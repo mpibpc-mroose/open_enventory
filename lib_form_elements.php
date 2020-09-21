@@ -293,11 +293,11 @@ formulare[".fixStr($paramHash["int_name"])."]=".json_encode($paramHash).";\n"
 .getFormFunctions($paramHash)."
 formulare[".fixStr($paramHash["int_name"])."][\"change\"]={};";
 	
-	if (count($paramHash["afterChange"])) foreach($paramHash["afterChange"] as $propertyName => $functionBody) {
+	if (is_array($paramHash["afterChange"])) foreach($paramHash["afterChange"] as $propertyName => $functionBody) {
 		$retval.="\nformulare[".fixStr($paramHash["int_name"])."][\"afterChange\"][".fixStr($propertyName)."]=function(thisValue) {".$functionBody." return true;};";
 	}
 	
-	if (count($paramHash["change"])) foreach($paramHash["change"] as $propertyName => $functionBody) {
+	if (is_array($paramHash["change"])) foreach($paramHash["change"] as $propertyName => $functionBody) {
 		$retval.="\nformulare[".fixStr($paramHash["int_name"])."][\"change\"][".fixStr($propertyName)."]=function(thisValue) {".$functionBody." return true;};";
 	}
 	
@@ -1345,7 +1345,7 @@ controlData[".fixStr($int_name)."]=".json_encode(array("data" => $static_data, )
 	
 	$rwInput.="<select".getNameId($paramHash).$onChangeText.$classTextRw.$tabText.$sizeText.$multiText.">";
 	
-	for ($a=0;$a<count($paramHash["int_names"]);$a++) {
+	if (is_array($paramHash["int_names"])) for ($a=0;$a<count($paramHash["int_names"]);$a++) {
 		if (isset($paramHash["defaultValue"])) {
 			$checkText=($paramHash["int_names"][$a]==$paramHash["defaultValue"]?" selected=\"selected\"":"");
 		}

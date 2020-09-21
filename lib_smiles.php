@@ -79,7 +79,7 @@ function SMgetAtom(& $molecule,$atom_no) {
 		}
 		// H-number
 		$iHyd=$atom[IMPLICIT_H]; // o_h irrelevant
-		if (count($atom[NEIGHBOURS])) foreach ($atom[NEIGHBOURS] as $neighbourNum) {
+		if (is_array($atom[NEIGHBOURS])) foreach ($atom[NEIGHBOURS] as $neighbourNum) {
 			if (isExplH($molecule,$neighbourNum)) {
 				$molecule["atoms"][$neighbourNum]["SMdone"]=true;
 				$iHyd++;
@@ -358,7 +358,7 @@ function getSMILESforBranch(& $molecule,$path) { // returns part of SMILES start
 	}
 
 	// branches? start with ( and lowest prio branch
-	for ($a=0;$a<count($branch_SMILES);$a++) {
+	if (is_array($branch_SMILES)) for ($a=0;$a<count($branch_SMILES);$a++) {
 		// Array Teil Anfang
 		$brackets=($a<count($branch_SMILES)-1);
 		if ($brackets) {

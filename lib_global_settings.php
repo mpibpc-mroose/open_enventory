@@ -28,10 +28,10 @@ along with open enventory.  If not, see <http://www.gnu.org/licenses/>.
  *----------------------------------------------------------------------------*/
 // globale EInstellungen
 define("maxRedir",4); // maximale Weiterleitungen, geht nicht mit Cookies
-define("uA","Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:64.0) Gecko/20100101 Firefox/64.0"); // als welcher Useragent soll sich der Server ausgeben
+define("uA","Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0"); // als welcher Useragent soll sich der Server ausgeben
 
 $default_http_options=array(
-	"useragent" => "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:64.0) Gecko/20100101 Firefox/64.0", 
+	"useragent" => uA, 
 	//~ "proxyhost" => "http://httproxy.mpi-muelheim.mpg.de:3128",
 	"timeout" => 20,
 	"connect_timeout" => 20,
@@ -125,7 +125,7 @@ define("query_cache_time",86400); // 1 day (only for long-time stability) // dep
 	//~ "view_safety" => "structure,molecule_name,safety_sym,safety_text,safety_data_sheet,safety_r_s,safety_class,safety_danger,safety_other,bp_short,links_chem",
 	//~ "view_physical" => "structure,molecule_name,emp_formula_short,mw,density_20,mp_short,bp_short,n_20,amount,storage,links_chem", 
 //~ )); // Definition von vordefinierten Ansichten
-$allowed_per_page=array(10,25,50,100,-1);
+$allowed_per_page=array(10,50,100,500,1000,3000,-1);
 $defaultCurrency="EUR";
 
 $clientCache=array(

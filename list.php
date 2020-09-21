@@ -71,7 +71,8 @@ else {
 $desired_action=$_REQUEST["desired_action"];
 $name=s($baseTable);
 
-if (empty($_REQUEST["fields"]) && !empty($g_settings["views"][$baseTable]["view_standard"])) {
+// Khoi: added $_REQUEST["table"] != "disposed_chemical_storage" to have disposed_chemicals list display correctly
+if ($_REQUEST["table"] != "disposed_chemical_storage" && empty($_REQUEST["fields"]) && !empty($g_settings["views"][$baseTable]["view_standard"])) {
 	$_REQUEST["fields"]=$g_settings["views"][$baseTable]["view_standard"];
 }
 
@@ -87,6 +88,7 @@ case "molecule":
 case "supplier_offer":
 	echo loadJS(array("safety_".$lang.".js","chem.js","safety.js"),"lib/");
 break;
+case "data_publication":
 case "literature":
 	echo loadJS(array("literature.js"),"lib/");
 break;
@@ -112,7 +114,7 @@ var compare_obj=[],compare_status=0,currentView=\"\",archive_entity,fields=".fix
 
 showCommFrame(array("debug" => false)); // for barcode search and select
 
-echo "<form name=\"main\" method=\"get\" action=".fixStr($_SERVER["REQUEST_URI"])." onSubmit=\"return false; \">
+echo "<form name=\"main\" method=\"get\" action=".fixStr(getenv("REQUEST_URI"))." onSubmit=\"return false; \">
 <div id=\"browsenav\">";
 
 if (!empty($_REQUEST["message"])) { // Nachricht über letzte Op anzeigen
@@ -131,11 +133,11 @@ if ($_REQUEST["buttons"]=="print_labels") { // Liste der ausgewählten Gebinde
 		//~ $title=s("labels_per_page");
 		$left[]=s("print_labels").": ";
 		
-		if (count($label_formats)) foreach($label_formats as $label_format) {
+		if (is_array($label_formats)) foreach($label_formats as $label_format) {
 			if (isset($label_dimensions[ $label_format ]["lang_key"] )) {
 				$left[]=s($label_dimensions[ $label_format ]["lang_key"]).":";
 			}
-			if (count($label_dimensions[ $label_format ]["types"])) foreach ($label_dimensions[ $label_format ]["types"] as $size => $parameters) {
+			if (is_array($label_dimensions[ $label_format ]["types"])) foreach ($label_dimensions[ $label_format ]["types"] as $size => $parameters) {
 				$left[]="<nobr><a href=\"javascript:printLabels(".$parameters["size"].",".$parameters["per_row"].",".$parameters["per_col"].",&quot;".$parameters["parameter"]."&quot;)\" class=\"imgButtonSm\"><img src=\"./lib/".$parameters["img"]."\" border=\"0\"".getTooltipP(s("labels_".$size).$parameters["per_row"]."x".$parameters["per_col"].s("labels_per_page").s($parameters["lang_key"])).">".$parameters["per_row"]."x".$parameters["per_col"]."</a></nobr>";
 			}
 			//~ echo "<br>";
@@ -173,6 +175,10 @@ else { // Ergebnisliste
 	case "person":
 	case "storage":
 		$left[]=getPrintBarcodesButton($baseTable);
+	break;
+	case "data_publication":
+	case "other_db":
+		$left[]=getSciflectionButton();
 	break;
 	}
 	

@@ -54,7 +54,7 @@ function getHiddenSubmit() {
 }
 
 function transParams($names) {
-	if (count($names)) foreach ($names as $name) {
+	if (is_array($names)) foreach ($names as $name) {
 		$retval.=transParam($name);
 	}
 	return $retval;
@@ -290,6 +290,9 @@ function loadJS($filenames,$prefix="") {
 			continue;
 		}
 		$filename=$prefix.$filenames[$a];
+		if (!strpos($filename, "?")) {
+			$filename.="?no-cache=".filemtime($filename);
+		}
 		//~ if (endswith($filename,".js")) {
 			//~ $filename.=".gz";
 		//~ }

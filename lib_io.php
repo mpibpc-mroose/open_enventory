@@ -126,7 +126,7 @@ function getDirList($analytics_device_id,$path="",$int_name="") { // Zeichnet Ve
 	if ($upDir) {
 		$retval.="<tr><td colspan=\"4\">".getDirLink($upDir,"..",$int_name)."</td></tr>"; // --> javascript, wg methode
 	}
-	if (count($dirList["data"])) foreach($dirList["data"] as $file) {
+	if (is_array($dirList["data"])) foreach($dirList["data"] as $file) {
 		if ($file["dir"]) { // Verzeichnis
 			$retval.="
 <tr>

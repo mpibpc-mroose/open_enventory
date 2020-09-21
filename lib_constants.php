@@ -30,9 +30,13 @@ require_once "lib_db_query_helper.php";
 require_once "lib_constants_permissions.php";
 
 define("db_type","enventory");
-define("currentVersion",0.813);
+define("currentVersion",0.814);
 define("showUpdateInfoUntil",1272638817);
 //~ echo strtotime("+1 week")."";
+
+define("SCIFLECTION","sciflection.com");
+define("SCIFLECTION_URL","https://".SCIFLECTION);
+//define("SCIFLECTION_URL","http://127.0.0.1:8080"); // testing only
 
 // locking
 define("UNLOCK",1);
@@ -180,7 +184,7 @@ define("fingerprint_count",16);
 define("fingerprint_bit",31); // avoid PHP unsigned long problems
 define("emp_formula_sort_fill",3); // fill atom numbers to this many digits
 
-$allowedTags=array("div","span","ol","ul","li","p","pre","h1","h2","h3","h4","h5","h6","font","table","colgroup","col","thead","tbody","tfoot","tr","th","td","hr","br","u","b","i","sub","sup","strike",); // div for justify
+$allowedTags=array("div","span","ol","ul","li","p","pre","h1","h2","h3","h4","h5","h6","font","table","colgroup","col","thead","tbody","tfoot","tr","th","td","hr","br","u","b","i","em","sub","sup","strike","strong",); // div for justify
 $analyticsAllowedProtocols=array("ftp","biotage");
 $forbidden_db_names=array("mysql","information_schema","wikidb", "phpmyadmin", "performance_schema", );
 
@@ -205,6 +209,15 @@ $reaction_conditions=array(
 	"duration" => array(), 
 	"h2press" => array(), 
 	"grounding_time" => array(), 
+	"lambda" => array("bottom" => true, "size" => 30, ), 
+	"rho_bulk" => array("bottom" => true, "size" => 30, ), 
+	"panel_weight_before" => array("bottom" => true, "size" => 30, ), 
+	"panel_weight_after" => array("bottom" => true, "size" => 30, ), 
+	"len" => array("bottom" => true, "size" => 30, ), 
+	"width" => array("bottom" => true, "size" => 30, ), 
+	"height" => array("bottom" => true, "size" => 30, ), 
+	"dryness" => array("bottom" => true, "size" => 30, ), 
+	"location" => array("bottom" => true, "size" => 30, "search_size" => 10, "search_op" => "ct", ), 
 );
 
 $excludedNames=array("-","(none)","{Error}",); // Namen, die ausgefiltert werden
@@ -217,6 +230,7 @@ $iso_no_symbols=array("P003","P011",);
 $iso_emerg_symbols=array("F006",);
 $iso_first_aid_symbols=array("E003","E004","E009","E011","E012",);
 
+define("data_publication_open",1);
 define("lab_journal_open",1);
 define("reaction_open",4);
 define("yield_digits",3);
