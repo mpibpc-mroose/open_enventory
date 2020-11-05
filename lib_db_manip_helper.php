@@ -587,8 +587,6 @@ function getSDSSQL($fieldName) {
 		if (empty($_REQUEST[$fieldName."_blob"])) {
 			$_REQUEST[$fieldName."_url"]="";
 			$_REQUEST[$fieldName."_by"]="";
-		} else {
-			$_REQUEST[$fieldName."_url"]=substr($_REQUEST[$fieldName."_url"],0,254); // truncate excessive length to fit into TINYTEXT
 		}
 		return nvp($fieldName."_url",SQL_TEXT).
 			nvp($fieldName."_by",SQL_TEXT).
@@ -826,7 +824,9 @@ function getNewReactionPermit() {
 			return array(1,s("warning_many_open1").$open_reaction_count.s("warning_many_open2").$left.s("warning_many_open3"),$left);
 		}
 	}
-	return array(1,"",-1);
+	else {
+		return array(1,"",-1);
+	}
 }
 
 function getDoubleFindFilter($lab_journal_codes) {
